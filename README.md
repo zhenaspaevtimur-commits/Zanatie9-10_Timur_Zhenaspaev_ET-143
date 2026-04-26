@@ -19,3 +19,20 @@
 <img width="714" height="826" alt="image" src="https://github.com/user-attachments/assets/3aa11eca-6ae7-4c52-b2c4-fcb66e3bc2da" />
 <img width="589" height="828" alt="image" src="https://github.com/user-attachments/assets/c12356e8-aa9b-492d-9127-60f83cab198b" />
 <img width="682" height="806" alt="image" src="https://github.com/user-attachments/assets/0c672059-4425-4cf9-bac4-3b1a1a2c9067" />
+
+
+
+Занятие 10.
+Чтение и запись данных в файл.
+Задание 1. Считать из текстового файла данные числового поля для вашей.
+Например, исходный файл имеет 2 столбца: ФИО и пол (0 – мужской, 1 -
+женский). Из файла считываются данные и если фамилия совпадает с
+очередным элементом массива структур, то в поле pol записывается
+соответствующее значение из файла.
+Ivanov 0
+Ivanova 1
+Petrov 0
+Sidorova 1
+Makarkin 0
+Задание 2. Сделать чтение / запись своей структуры в бинарный файл.
+Оформить в виде подпрограмм.
