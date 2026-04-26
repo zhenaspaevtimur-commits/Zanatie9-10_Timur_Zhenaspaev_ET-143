@@ -38,3 +38,8 @@ Makarkin 0
 
 Задание 2. Сделать чтение / запись своей структуры в бинарный файл.
 Оформить в виде подпрограмм.
+
+
+<img width="632" height="809" alt="image" src="https://github.com/user-attachments/assets/2f45cde7-a450-489e-8825-3dbc28118c10" />
+<img width="695" height="832" alt="image" src="https://github.com/user-attachments/assets/39ed4591-87d2-4e2e-9230-0b8a50e0a803" />
+
