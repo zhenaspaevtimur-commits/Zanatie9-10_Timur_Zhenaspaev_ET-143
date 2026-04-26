@@ -13,3 +13,9 @@
 отсутствуют. Реализовать функцию изменения данных конкретного номера. В
 отдельный массив поместить все номера, имеющие балкон. Реализовать вывод
 отфильтрованных данных в виде оберточной функции.
+
+
+
+<img width="714" height="826" alt="image" src="https://github.com/user-attachments/assets/3aa11eca-6ae7-4c52-b2c4-fcb66e3bc2da" />
+<img width="589" height="828" alt="image" src="https://github.com/user-attachments/assets/c12356e8-aa9b-492d-9127-60f83cab198b" />
+<img width="682" height="806" alt="image" src="https://github.com/user-attachments/assets/0c672059-4425-4cf9-bac4-3b1a1a2c9067" />
