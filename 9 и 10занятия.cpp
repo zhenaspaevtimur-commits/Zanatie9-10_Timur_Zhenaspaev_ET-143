@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <cstring> // Для strlen, strcmp
+using namespace std;
+
 // РАЗДЕЛ 1: ТИПЫ ДАННЫХ
 enum class Comfort {
     Luxury = 0,
@@ -205,7 +207,7 @@ void printCheapest3(const HotelRoom arr[], int size) {
         std::cout << "  " << (i + 1) << ". ";
         printPadded(arr[i].hotelName, 18);
         std::cout << "  #" << arr[i].roomNumber << "  " << arr[i].price << " rub./night\n"
-                  << "     Missing: ";
+            << "     Missing: ";
         printMissingAmenities(arr[i].amenities);
     }
     printSeparator();
@@ -222,11 +224,11 @@ bool modifyRoom(HotelRoom arr[], int size, int roomNumber,
                 << "  " << comfortToStr(arr[i].comfort)
                 << "  " << arr[i].capacity << " pax"
                 << "  " << arr[i].price << " rub.\n";
-            
+
             arr[i].price = newPrice;
             arr[i].capacity = newCapacity;
             arr[i].comfort = newComfort;
-            
+
             std::cout << "  [After ]  Room #" << arr[i].roomNumber
                 << "  " << comfortToStr(arr[i].comfort)
                 << "  " << arr[i].capacity << " pax"
@@ -284,7 +286,7 @@ void saveToBinaryFile(const HotelRoom rooms[], int size, const char* filename) {
     // Записываем количество элементов
     fout.write(reinterpret_cast<const char*>(&size), sizeof(size));
     fout.write(reinterpret_cast<const char*>(rooms), size * sizeof(HotelRoom));
-    
+
     fout.close();
     std::cout << "  [+] Data successfully saved to binary file: " << filename << "\n";
 }
@@ -300,7 +302,7 @@ void loadFromBinaryFile(HotelRoom rooms[], int& size, const char* filename) {
     fin.read(reinterpret_cast<char*>(&size), sizeof(size));
     // Считываем весь массив целиком
     fin.read(reinterpret_cast<char*>(rooms), size * sizeof(HotelRoom));
-    
+
     fin.close();
     std::cout << "  [+] Data successfully loaded from binary file: " << filename << "\n";
 }
