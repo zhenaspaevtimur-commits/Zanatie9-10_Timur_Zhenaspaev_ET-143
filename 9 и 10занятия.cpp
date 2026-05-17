@@ -1,12 +1,7 @@
 ﻿#include <iostream>
-#include <iomanip>
-#include <string>
-#include <vector>
-#include <algorithm>
 #include <fstream>
-
-//  РАЗДЕЛ 1: ТИПЫ ДАННЫХ
-
+#include <cstring> // Для strlen, strcmp
+// РАЗДЕЛ 1: ТИПЫ ДАННЫХ
 enum class Comfort {
     Luxury = 0,
     SemiLuxury = 1,
@@ -24,7 +19,7 @@ struct Amenities {
 };
 
 struct HotelRoom {
-    std::string hotelName;
+    char hotelName[50];
     int         roomNumber;
     Comfort     comfort;
     int         capacity;
@@ -32,10 +27,28 @@ struct HotelRoom {
     Amenities   amenities;
 };
 
-//  РАЗДЕЛ 2: ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВЫВОДА
+// РАЗДЕЛ 2: ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВЫВОДА
+void printPadded(const char* str, int width) {
+    int len = std::strlen(str);
+    std::cout << str;
+    for (int i = len; i < width; ++i) {
+        std::cout << ' ';
+    }
+}
 
-// Фиксированная ширина — колонки не «съезжают»
-std::string comfortToStr(Comfort c) {
+// Функция для печати чисел с фиксированной шириной
+void printPaddedInt(int num, int width) {
+    int temp = num;
+    int len = (num == 0) ? 1 : 0;
+    while (temp > 0) {
+        len++;
+        temp /= 10;
+    }
+    for (int i = len; i < width; ++i) std::cout << ' ';
+    std::cout << num;
+}
+
+const char* comfortToStr(Comfort c) {
     switch (c) {
     case Comfort::Luxury:     return "Luxury    ";
     case Comfort::SemiLuxury: return "Semi-Lux  ";
@@ -45,8 +58,7 @@ std::string comfortToStr(Comfort c) {
     }
 }
 
-// [+] / [-] одинаковой ширины — выравнивание не ломается
-std::string flag(bool v) { return v ? "[+]" : "[-]"; }
+const char* flag(bool v) { return v ? "[+]" : "[-]"; }
 
 void printAmenities(const Amenities& a) {
     std::cout
@@ -58,103 +70,106 @@ void printAmenities(const Amenities& a) {
         << "  Parking:" << flag(a.parking) << "\n";
 }
 
-// Перечисляет отсутствующие опции через запятую
 void printMissingAmenities(const Amenities& a) {
     bool any = false;
-    auto comma = [&]() { if (any) std::cout << ", "; any = true; };
-    if (!a.wifi) { comma(); std::cout << "Wi-Fi"; }
-    if (!a.balcony) { comma(); std::cout << "Balcony"; }
-    if (!a.tv) { comma(); std::cout << "TV"; }
-    if (!a.minibar) { comma(); std::cout << "Minibar"; }
-    if (!a.airConditioning) { comma(); std::cout << "A/C"; }
-    if (!a.parking) { comma(); std::cout << "Parking"; }
+    if (!a.wifi) { if (any) std::cout << ", "; std::cout << "Wi-Fi"; any = true; }
+    if (!a.balcony) { if (any) std::cout << ", "; std::cout << "Balcony"; any = true; }
+    if (!a.tv) { if (any) std::cout << ", "; std::cout << "TV"; any = true; }
+    if (!a.minibar) { if (any) std::cout << ", "; std::cout << "Minibar"; any = true; }
+    if (!a.airConditioning) { if (any) std::cout << ", "; std::cout << "A/C"; any = true; }
+    if (!a.parking) { if (any) std::cout << ", "; std::cout << "Parking"; any = true; }
     if (!any) std::cout << "all options available";
     std::cout << "\n";
 }
 
-// Горизонтальный разделитель
 void printSeparator(char ch = '-', int width = 72) {
-    std::cout << std::string(width, ch) << "\n";
+    for (int i = 0; i < width; ++i) std::cout << ch;
+    std::cout << "\n";
 }
 
-// Шапка таблицы с именами колонок
 void printTableHeader() {
     printSeparator();
-    std::cout
-        << std::left
-        << std::setw(5) << "  #"
-        << std::setw(18) << "Hotel"
-        << std::setw(6) << "Room"
-        << std::setw(12) << "Comfort"
-        << std::setw(6) << "Pax"
-        << "Price (rub./night)\n";
+    std::cout << "  #  ";
+    printPadded("Hotel", 18);
+    printPadded("Room", 8);
+    printPadded("Comfort", 12);
+    printPadded("Pax", 6);
+    std::cout << "Price (rub./night)\n";
     printSeparator();
 }
 
-// Одна строка таблицы (idx = -1 → без номера)
 void printRoomLine(const HotelRoom& r, int idx = -1) {
-    if (idx >= 0)
-        std::cout << std::right << std::setw(3) << idx << ". ";
-    else
+    if (idx >= 0) {
+        printPaddedInt(idx, 3);
+        std::cout << ". ";
+    }
+    else {
         std::cout << "     ";
+    }
 
-    std::cout
-        << std::left << std::setw(18) << r.hotelName
-        << std::right << std::setw(5) << r.roomNumber << "  "
-        << std::left << std::setw(12) << comfortToStr(r.comfort)
-        << std::right << std::setw(3) << r.capacity << " pax  "
-        << std::fixed << std::setprecision(2)
-        << std::setw(10) << r.price << "\n";
+    printPadded(r.hotelName, 18);
+    printPaddedInt(r.roomNumber, 5);
+    std::cout << "   ";
+    printPadded(comfortToStr(r.comfort), 12);
+    printPaddedInt(r.capacity, 2);
+    std::cout << " pax  " << r.price << "\n";
     printAmenities(r.amenities);
 }
 
-//  РАЗДЕЛ 3: ВЫВОД ОТФИЛЬТРОВАННОГО СПИСКА
+// РАЗДЕЛ 3: ВЫВОД ОТФИЛЬТРОВАННОГО СПИСКА (ОБЕРТОЧНАЯ ФУНКЦИЯ)
 
-void printFiltered(const std::vector<HotelRoom>& arr, const std::string& title) {
+void printFiltered(const HotelRoom arr[], int size, const char* title) {
     std::cout << "\n";
     printSeparator('=');
-    std::cout << "  " << title << "  [" << arr.size() << " entries]\n";
+    std::cout << "  " << title << "  [" << size << " entries]\n";
     printSeparator('=');
-    if (arr.empty()) { std::cout << "  (no entries)\n"; return; }
+    if (size == 0) { std::cout << "  (no entries)\n"; return; }
     printTableHeader();
-    for (size_t i = 0; i < arr.size(); ++i)
-        printRoomLine(arr[i], (int)(i + 1));
+    for (int i = 0; i < size; ++i) {
+        printRoomLine(arr[i], i + 1);
+    }
     printSeparator();
 }
 
-//  РАЗДЕЛ 4: ФИЛЬТРАЦИЯ
+// РАЗДЕЛ 4: ФИЛЬТРАЦИЯ
 
-bool endsWith(const std::string& str, const std::string& suffix) {
-    if (suffix.size() > str.size()) return false;
-    return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+bool endsWith(const char* str, const char* suffix) {
+    int strLen = std::strlen(str);
+    int suffLen = std::strlen(suffix);
+    if (suffLen > strLen) return false;
+    return std::strcmp(str + strLen - suffLen, suffix) == 0;
 }
 
-std::vector<HotelRoom> filterByHotelSuffix(const std::vector<HotelRoom>& src) {
-    std::vector<HotelRoom> result;
-    for (const auto& r : src)
-        if (endsWith(r.hotelName, "hotel"))
-            result.push_back(r);
-    return result;
+void filterByHotelSuffix(const HotelRoom src[], int srcSize, HotelRoom dest[], int& destSize) {
+    destSize = 0;
+    for (int i = 0; i < srcSize; ++i) {
+        if (endsWith(src[i].hotelName, "hotel")) {
+            dest[destSize] = src[i];
+            destSize++;
+        }
+    }
 }
 
-std::vector<HotelRoom> filterByBalcony(const std::vector<HotelRoom>& src) {
-    std::vector<HotelRoom> result;
-    for (const auto& r : src)
-        if (r.amenities.balcony)
-            result.push_back(r);
-    return result;
+void filterByBalcony(const HotelRoom src[], int srcSize, HotelRoom dest[], int& destSize) {
+    destSize = 0;
+    for (int i = 0; i < srcSize; ++i) {
+        if (src[i].amenities.balcony) {
+            dest[destSize] = src[i];
+            destSize++;
+        }
+    }
 }
 
-//  РАЗДЕЛ 5: СОРТИРОВКА ПУЗЫРЬКОМ (по возрастанию стоимости)
+// РАЗДЕЛ 5: СОРТИРОВКА ПУЗЫРЬКОМ
 
-void bubbleSortByPrice(std::vector<HotelRoom>& arr) {
-    bool swapped;
-    size_t n = arr.size();
-    for (size_t i = 0; i < n - 1; ++i) {
-        swapped = false;
-        for (size_t j = 0; j < n - 1 - i; ++j) {
+void bubbleSortByPrice(HotelRoom arr[], int size) {
+    for (int i = 0; i < size - 1; ++i) {
+        bool swapped = false;
+        for (int j = 0; j < size - 1 - i; ++j) {
             if (arr[j].price > arr[j + 1].price) {
-                std::swap(arr[j], arr[j + 1]);
+                HotelRoom temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
                 swapped = true;
             }
         }
@@ -162,21 +177,20 @@ void bubbleSortByPrice(std::vector<HotelRoom>& arr) {
     }
 }
 
-//  РАЗДЕЛ 6: ПОИСК И ДЕТАЛЬНЫЙ ВЫВОД
+// РАЗДЕЛ 6: ПОИСК И ДЕТАЛЬНЫЙ ВЫВОД
 
-void printRoomByNumber(const std::vector<HotelRoom>& arr, int roomNumber) {
-    for (const auto& r : arr) {
-        if (r.roomNumber == roomNumber) {
+void printRoomByNumber(const HotelRoom arr[], int size, int roomNumber) {
+    for (int i = 0; i < size; ++i) {
+        if (arr[i].roomNumber == roomNumber) {
             printSeparator();
             std::cout
-                << "  Hotel   : " << r.hotelName << "\n"
-                << "  Room    : " << r.roomNumber << "\n"
-                << "  Comfort : " << comfortToStr(r.comfort) << "\n"
-                << "  Guests  : " << r.capacity << " pax\n"
-                << "  Price   : " << std::fixed << std::setprecision(2)
-                << r.price << " rub./night\n"
+                << "  Hotel   : " << arr[i].hotelName << "\n"
+                << "  Room    : " << arr[i].roomNumber << "\n"
+                << "  Comfort : " << comfortToStr(arr[i].comfort) << "\n"
+                << "  Guests  : " << arr[i].capacity << " pax\n"
+                << "  Price   : " << arr[i].price << " rub./night\n"
                 << "  Options :\n";
-            printAmenities(r.amenities);
+            printAmenities(arr[i].amenities);
             printSeparator();
             return;
         }
@@ -184,42 +198,39 @@ void printRoomByNumber(const std::vector<HotelRoom>& arr, int roomNumber) {
     std::cout << "  Room #" << roomNumber << " — not found.\n";
 }
 
-void printCheapest3(const std::vector<HotelRoom>& arr) {
-    size_t k = std::min(arr.size(), size_t(3));
+void printCheapest3(const HotelRoom arr[], int size) {
+    int k = (size < 3) ? size : 3;
     printSeparator();
-    for (size_t i = 0; i < k; ++i) {
-        std::cout
-            << "  " << (i + 1) << ". "
-            << std::left << std::setw(18) << arr[i].hotelName
-            << "  #" << arr[i].roomNumber
-            << "  " << std::fixed << std::setprecision(2)
-            << arr[i].price << " rub./night\n"
-            << "     Missing: ";
+    for (int i = 0; i < k; ++i) {
+        std::cout << "  " << (i + 1) << ". ";
+        printPadded(arr[i].hotelName, 18);
+        std::cout << "  #" << arr[i].roomNumber << "  " << arr[i].price << " rub./night\n"
+                  << "     Missing: ";
         printMissingAmenities(arr[i].amenities);
     }
     printSeparator();
 }
 
-//  РАЗДЕЛ 7: ИЗМЕНЕНИЕ ДАННЫХ НОМЕРА
+// РАЗДЕЛ 7: ИЗМЕНЕНИЕ ДАННЫХ НОМЕРА
 
-bool modifyRoom(std::vector<HotelRoom>& arr, int roomNumber,
+bool modifyRoom(HotelRoom arr[], int size, int roomNumber,
     double newPrice, int newCapacity, Comfort newComfort) {
-    for (auto& r : arr) {
-        if (r.roomNumber == roomNumber) {
+    for (int i = 0; i < size; ++i) {
+        if (arr[i].roomNumber == roomNumber) {
             printSeparator();
-            std::cout << "  [Before]  Room #" << r.roomNumber
-                << "  " << comfortToStr(r.comfort)
-                << "  " << r.capacity << " pax"
-                << "  " << std::fixed << std::setprecision(2)
-                << r.price << " rub.\n";
-            r.price = newPrice;
-            r.capacity = newCapacity;
-            r.comfort = newComfort;
-            std::cout << "  [After ]  Room #" << r.roomNumber
-                << "  " << comfortToStr(r.comfort)
-                << "  " << r.capacity << " pax"
-                << "  " << std::fixed << std::setprecision(2)
-                << r.price << " rub.\n";
+            std::cout << "  [Before]  Room #" << arr[i].roomNumber
+                << "  " << comfortToStr(arr[i].comfort)
+                << "  " << arr[i].capacity << " pax"
+                << "  " << arr[i].price << " rub.\n";
+            
+            arr[i].price = newPrice;
+            arr[i].capacity = newCapacity;
+            arr[i].comfort = newComfort;
+            
+            std::cout << "  [After ]  Room #" << arr[i].roomNumber
+                << "  " << comfortToStr(arr[i].comfort)
+                << "  " << arr[i].capacity << " pax"
+                << "  " << arr[i].price << " rub.\n";
             printSeparator();
             return true;
         }
@@ -228,9 +239,9 @@ bool modifyRoom(std::vector<HotelRoom>& arr, int roomNumber,
     return false;
 }
 
-//  РАЗДЕЛ 8: РАБОТА С ФАЙЛАМИ
+// РАЗДЕЛ 8: РАБОТА С ФАЙЛАМИ
 
-void generateTestTextFile(const std::string& filename) {
+void generateTestTextFile(const char* filename) {
     std::ofstream fout(filename);
     if (fout.is_open()) {
         fout << "101 20000.0\n";
@@ -241,7 +252,7 @@ void generateTestTextFile(const std::string& filename) {
     }
 }
 
-void updatePriceFromTextFile(std::vector<HotelRoom>& rooms, const std::string& filename) {
+void updatePriceFromTextFile(HotelRoom rooms[], int size, const char* filename) {
     std::ifstream fin(filename);
     if (!fin.is_open()) {
         std::cout << "Error opening text file for reading!\n";
@@ -252,9 +263,9 @@ void updatePriceFromTextFile(std::vector<HotelRoom>& rooms, const std::string& f
     double newPrice;
 
     while (fin >> targetRoom >> newPrice) {
-        for (auto& r : rooms) {
-            if (r.roomNumber == targetRoom) {
-                r.price = newPrice;
+        for (int i = 0; i < size; ++i) {
+            if (rooms[i].roomNumber == targetRoom) {
+                rooms[i].price = newPrice;
                 break;
             }
         }
@@ -263,64 +274,46 @@ void updatePriceFromTextFile(std::vector<HotelRoom>& rooms, const std::string& f
     std::cout << "  [+] Data successfully updated from text file: " << filename << "\n";
 }
 
-void saveToBinaryFile(const std::vector<HotelRoom>& rooms, const std::string& filename) {
+void saveToBinaryFile(const HotelRoom rooms[], int size, const char* filename) {
     std::ofstream fout(filename, std::ios::binary);
     if (!fout.is_open()) {
         std::cout << "Error opening binary file for writing!\n";
         return;
     }
 
-    size_t count = rooms.size();
-    fout.write(reinterpret_cast<const char*>(&count), sizeof(count));
-
-    for (const auto& r : rooms) {
-        size_t len = r.hotelName.size();
-        fout.write(reinterpret_cast<const char*>(&len), sizeof(len));
-        fout.write(r.hotelName.c_str(), len);
-
-        fout.write(reinterpret_cast<const char*>(&r.roomNumber), sizeof(r.roomNumber));
-        fout.write(reinterpret_cast<const char*>(&r.comfort), sizeof(r.comfort));
-        fout.write(reinterpret_cast<const char*>(&r.capacity), sizeof(r.capacity));
-        fout.write(reinterpret_cast<const char*>(&r.price), sizeof(r.price));
-        fout.write(reinterpret_cast<const char*>(&r.amenities), sizeof(r.amenities));
-    }
+    // Записываем количество элементов
+    fout.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    fout.write(reinterpret_cast<const char*>(rooms), size * sizeof(HotelRoom));
+    
     fout.close();
     std::cout << "  [+] Data successfully saved to binary file: " << filename << "\n";
 }
 
-void loadFromBinaryFile(std::vector<HotelRoom>& rooms, const std::string& filename) {
+void loadFromBinaryFile(HotelRoom rooms[], int& size, const char* filename) {
     std::ifstream fin(filename, std::ios::binary);
     if (!fin.is_open()) {
         std::cout << "Error opening binary file for reading!\n";
         return;
     }
 
-    size_t count = 0;
-    fin.read(reinterpret_cast<char*>(&count), sizeof(count));
-    rooms.resize(count);
-
-    for (size_t i = 0; i < count; ++i) {
-        size_t len = 0;
-        fin.read(reinterpret_cast<char*>(&len), sizeof(len));
-        rooms[i].hotelName.resize(len);
-        fin.read(&rooms[i].hotelName[0], len);
-
-        fin.read(reinterpret_cast<char*>(&rooms[i].roomNumber), sizeof(rooms[i].roomNumber));
-        fin.read(reinterpret_cast<char*>(&rooms[i].comfort), sizeof(rooms[i].comfort));
-        fin.read(reinterpret_cast<char*>(&rooms[i].capacity), sizeof(rooms[i].capacity));
-        fin.read(reinterpret_cast<char*>(&rooms[i].price), sizeof(rooms[i].price));
-        fin.read(reinterpret_cast<char*>(&rooms[i].amenities), sizeof(rooms[i].amenities));
-    }
+    // Считываем количество
+    fin.read(reinterpret_cast<char*>(&size), sizeof(size));
+    // Считываем весь массив целиком
+    fin.read(reinterpret_cast<char*>(rooms), size * sizeof(HotelRoom));
+    
     fin.close();
     std::cout << "  [+] Data successfully loaded from binary file: " << filename << "\n";
 }
 
-//  РАЗДЕЛ 9: MAIN
+// РАЗДЕЛ 9: MAIN
 
 int main() {
     setlocale(LC_ALL, "");
 
-    std::vector<HotelRoom> rooms = {
+    const int MAX_ROOMS = 50; // Максимальный размер массивов
+    int roomsSize = 20;
+
+    HotelRoom rooms[MAX_ROOMS] = {
         // Оканчиваются на "hotel"
         {"Grand hotel",   101, Comfort::Luxury,     2, 15000.0, {true,  true,  true,  true,  true,  true }},
         {"Grand hotel",   102, Comfort::SemiLuxury, 2, 10500.0, {true,  false, true,  true,  true,  false}},
@@ -346,50 +339,56 @@ int main() {
     };
 
     // ШАГ 1: Исходный массив
-    printFiltered(rooms, "SOURCE ARRAY (20 rooms)");
+    printFiltered(rooms, roomsSize, "SOURCE ARRAY (20 rooms)");
 
     // ШАГ 2: Фильтрация по суффиксу "hotel"
-    std::vector<HotelRoom> hotelArr = filterByHotelSuffix(rooms);
-    printFiltered(hotelArr, "Hotels ending with 'hotel'");
+    HotelRoom hotelArr[MAX_ROOMS];
+    int hotelArrSize = 0;
+    filterByHotelSuffix(rooms, roomsSize, hotelArr, hotelArrSize);
+    printFiltered(hotelArr, hotelArrSize, "Hotels ending with 'hotel'");
 
     // ШАГ 3: Сортировка пузырьком по возрастанию стоимости
-    bubbleSortByPrice(hotelArr);
-    printFiltered(hotelArr, "Sorted by price (ascending)");
+    bubbleSortByPrice(hotelArr, hotelArrSize);
+    printFiltered(hotelArr, hotelArrSize, "Sorted by price (ascending)");
 
     // ШАГ 4: Вывод данных по конкретному номеру
     std::cout << "\n=== Room lookup: #401 ===\n";
-    printRoomByNumber(hotelArr, 401);
+    printRoomByNumber(hotelArr, hotelArrSize, 401);
 
     // ШАГ 5: Три самых дешёвых + отсутствующие опции
     std::cout << "\n=== 3 cheapest rooms (missing amenities) ===\n";
-    printCheapest3(hotelArr);
+    printCheapest3(hotelArr, hotelArrSize);
 
     // ШАГ 6: Изменение данных номера 402
     std::cout << "\n=== Modifying room #402 ===\n";
-    modifyRoom(hotelArr, 402, 3500.0, 4, Comfort::Standard);
+    modifyRoom(hotelArr, hotelArrSize, 402, 3500.0, 4, Comfort::Standard);
 
     // ШАГ 7: Номера с балконом
-    std::vector<HotelRoom> balconyArr = filterByBalcony(hotelArr);
-    printFiltered(balconyArr, "Rooms with balcony (from 'hotel'-filtered list, after sorting)");
+    HotelRoom balconyArr[MAX_ROOMS];
+    int balconyArrSize = 0;
+    filterByBalcony(hotelArr, hotelArrSize, balconyArr, balconyArrSize);
+    printFiltered(balconyArr, balconyArrSize, "Rooms with balcony (from 'hotel'-filtered list)");
 
     // Задание 1: Текстовый файл
     std::cout << "\n=== TASK 1: Updating prices from text file ===\n";
-    std::string txtFile = "price_updates.txt";
+    const char* txtFile = "price_updates.txt";
     generateTestTextFile(txtFile); // Создаем файл
-    updatePriceFromTextFile(rooms, txtFile);
-    printFiltered(rooms, "ARRAY AFTER TEXT FILE UPDATE (Check rooms 101, 202, 701, 1601)");
+    updatePriceFromTextFile(rooms, roomsSize, txtFile);
+    printFiltered(rooms, roomsSize, "ARRAY AFTER TEXT FILE UPDATE (Check rooms 101, 202, 701, 1601)");
 
     // Задание 2: Бинарный файл
     std::cout << "\n=== TASK 2: Binary file I/O ===\n";
-    std::string binFile = "hotel_data.bin";
+    const char* binFile = "hotel_data.bin";
 
-    saveToBinaryFile(rooms, binFile); // Сохраняем весь измененный массив в бинарник
+    saveToBinaryFile(rooms, roomsSize, binFile);
 
-    // Очищаем оригинальный массив
-    rooms.clear();
-    std::cout << "  [i] Original array cleared. Current size: " << rooms.size() << "\n";
+    // Имитируем очистку оригинального массива
+    roomsSize = 0;
+    std::cout << "  [i] Original array 'cleared'. Current size: " << roomsSize << "\n";
 
     // Считываем все обратно
-    loadFromBinaryFile(rooms, binFile);
-    printFiltered(rooms, "FINAL ARRAY LOADED FROM BINARY FILE");
+    loadFromBinaryFile(rooms, roomsSize, binFile);
+    printFiltered(rooms, roomsSize, "FINAL ARRAY LOADED FROM BINARY FILE");
+
+    return 0;
 }
